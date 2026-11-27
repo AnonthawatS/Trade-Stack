@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0E1116">
+<title>Trade Stack</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/favicon-64.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Trade Stack">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+/* VOICE: cockpit ของเทรดเดอร์ — สงบ ชัด บังคับกฎ
+   IDEA: แผงหน้าปัดเครื่องบิน: ไฟสถานะ risk ก่อนทุกอย่าง
+   PICTURE: การ์ด Risk + เกรด A+/A ขนาดใหญ่ที่คำนวณสด
+   COLOUR/TYPE: กราไฟต์ #0E1116, ทอง #E0B04A, เขียว/แดงสถานะ · IBM Plex Sans Thai + JetBrains Mono
+   LAYOUT: คอลัมน์เดียว mobile-first กว้างสุด 560px, แถบนำทางล่าง */
+:root{color-scheme:dark;--bg:#0E1116;--card:#171B22;--card2:#1F2530;--line:#262C36;--ink:#E6E8EB;--mut:#9AA3AF;--gold:#E0B04A;--grn:#3FB68B;--red:#F0616D;--blu:#6EA8FF}
+*{box-sizing:border-box;min-width:0}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 'IBM Plex Sans Thai',system-ui,sans-serif;overflow-x:clip}
+.mono{font-family:'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums;white-space:nowrap}
+.app{max-width:560px;margin:0 auto;min-height:100vh;padding:calc(14px + env(safe-area-inset-top)) 14px 96px;display:flex;flex-direction:column;gap:10px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.brand{display:flex;align-items:center;gap:8px;font-weight:700;font-size:20px}
+.logo{width:32px;height:32px;border-radius:9px;display:block;box-shadow:0 0 0 1px #3a3220}
+.sub{font-size:12px;color:var(--mut)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.row{display:flex;gap:8px;align-items:center}.between{justify-content:space-between}.wrap{flex-wrap:wrap}
+.g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.g3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.g4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.h{font-size:14px;font-weight:600}.lab{font-size:12px;color:var(--mut)}
+.chip{font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px;background:var(--card2);color:var(--ink);white-space:nowrap}
+.ok{color:var(--grn)}.bad{color:var(--red)}.gold{color:var(--gold)}.blue{color:var(--blu)}
+.bar{height:6px;border-radius:3px;background:var(--line);overflow:hidden}.bar>i{display:block;height:100%;border-radius:3px;background:var(--grn)}
+.tile{background:var(--card2);border-radius:12px;padding:8px 10px;display:flex;flex-direction:column;gap:1px}
+.tile b{font-family:'JetBrains Mono',monospace;font-size:15px;white-space:nowrap}
+button,.btn{font:inherit;color:inherit;cursor:pointer;border:0}
+.btn{min-height:46px;border-radius:14px;padding:0 16px;font-weight:700;font-size:15px;background:var(--card2);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;gap:8px}
+.btn.pri{background:var(--gold);color:#14110A;border-color:var(--gold)}.btn.dng{background:#3A1A1E;color:var(--red);border-color:#5a2730}
+.btn:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,.seg button:focus-visible,.tg:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.seg{display:flex;background:var(--card2);border-radius:12px;padding:3px;gap:3px}
+.seg button{flex:1;min-height:40px;border-radius:9px;font-weight:600;font-size:13px;color:var(--mut);background:transparent}
+.seg button.on{background:var(--ink);color:#0E1116}.seg button.on.sell{background:var(--red);color:#fff}.seg button.on.buy{background:var(--grn);color:#06140e}
+.fld{display:flex;flex-direction:column;gap:3px;background:var(--card2);border-radius:12px;padding:7px 10px}
+.fld span{font-size:11px;color:var(--mut)}
+input,select,textarea{font:inherit;font-size:16px;color:var(--ink);background:transparent;border:0;width:100%;padding:0}
+.fld input{font-family:'JetBrains Mono',monospace}
+textarea{background:var(--card2);border-radius:12px;padding:9px 10px;min-height:64px;resize:vertical}
+select{background:var(--card2);border-radius:12px;padding:10px;min-height:44px}
+select option{background:#171B22}
+.chk{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-top:1px solid var(--line)}.chk:first-child{border-top:0}
+.chk input{width:22px;height:22px;flex:none;accent-color:var(--grn);margin-top:1px}
+.tag{font-size:10px;font-weight:700;padding:2px 6px;border-radius:6px;white-space:nowrap}
+.t-must{background:#3A1A1E;color:#FF8C95}.t-auto{background:#1B2A44;color:var(--blu)}
+.tgs{display:flex;flex-wrap:wrap;gap:6px}
+.tg{font-size:13px;padding:7px 11px;border-radius:999px;background:var(--card2);border:1px solid var(--line);color:var(--mut);min-height:36px}
+.tg.on{background:#3A3016;border-color:var(--gold);color:var(--gold)}
+.grade{width:72px;height:72px;border-radius:16px;display:grid;place-items:center;font-size:30px;font-weight:700;flex:none}
+.gA\+{background:var(--grn);color:#06140e}.gA{background:var(--blu);color:#07142a}.gNO{background:#3A1A1E;color:var(--red);font-size:16px;text-align:center;line-height:1.1}
+.warn{font-size:13px;background:#2b1d10;color:#F2C96A;border-radius:10px;padding:8px 10px}
+.warn.r{background:#3A1A1E;color:#FF9AA2}
+.shots{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.shot{aspect-ratio:4/3;border:1px dashed #3a4250;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:12px;color:var(--mut);position:relative;overflow:hidden;cursor:pointer;background:var(--card2)}
+.shot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.shot input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.shot em{position:absolute;left:4px;bottom:4px;font-style:normal;font-size:10px;background:rgba(0,0,0,.65);color:#fff;padding:1px 5px;border-radius:5px}
+.trade{display:flex;flex-direction:column;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;text-align:left;width:100%}
+.nav{position:fixed;left:0;right:0;bottom:0;height:70px;background:#12161C;border-top:1px solid var(--line);display:flex;justify-content:space-around;align-items:center;padding:0 6px env(safe-area-inset-bottom);z-index:5}
+.nav button{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;color:var(--mut);background:none;min-width:56px;min-height:48px;justify-content:center}
+.nav button.on{color:var(--gold)}
+.nav .plus{width:54px;height:54px;border-radius:16px;background:var(--gold);color:#14110A;margin-top:-24px;min-width:0}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:6px 4px;border-bottom:1px solid var(--line);text-align:right}th:first-child,td:first-child{text-align:left}th{color:var(--mut);font-weight:500}
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px}
+.cal .dh{font-size:11px;color:var(--mut);text-align:center}
+.cday{aspect-ratio:1/1.05;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;background:#151A21;color:#5d6674;font-size:12px;font-weight:600;padding:0}
+.cday small{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:500}
+.cday.today{outline:2px solid var(--ink);outline-offset:1px}
+.calleg{display:flex;gap:10px;flex-wrap:wrap;font-size:11px;color:var(--mut)}.calleg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px;vertical-align:-1px}
+.fig{position:relative;height:170px}.fig svg{position:absolute;inset:0;width:100%;height:100%}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:flex-end;justify-content:center;z-index:9}
+.modal.show{display:flex}.sheet{background:var(--bg);border:1px solid var(--line);border-radius:20px 20px 0 0;width:100%;max-width:560px;max-height:88vh;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:10px}
+.toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%);background:var(--ink);color:#0E1116;padding:9px 14px;border-radius:12px;font-size:14px;font-weight:600;opacity:0;transition:opacity .2s;pointer-events:none;z-index:10}
+.toast.show{opacity:1}
+.empty{text-align:center;color:var(--mut);padding:18px;font-size:14px}
+.note{font-size:12px;color:var(--mut)}
+details summary{cursor:pointer;font-weight:600;font-size:14px;min-height:32px;display:flex;align-items:center}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+<nav class="nav" id="nav">
+<button data-go="home"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>หน้าแรก</button>
+<button data-go="history"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>ประวัติ</button>
+<button data-go="new" class="plus" aria-label="เช็กลิสต์และเปิดไม้ใหม่"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+<button data-go="stats"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>สถิติ</button>
+<button data-go="settings"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>ตั้งค่า</button>
+</nav>
+<div class="modal" id="modal"><div class="sheet" id="sheet"></div></div>
+<div class="toast" id="toast"></div>
+<script>
+{
+// ---------- constants ----------
+const $ = s => document.querySelector(s);
+const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const num = v => { const n = parseFloat(String(v ?? '').replace(/,/g,'')); return Number.isFinite(n) ? n : null; };
+const fx = (n, d = 2) => Number.isFinite(n) ? n.toLocaleString('en-US', {minimumFractionDigits:d, maximumFractionDigits:d}) : '–';
+const money = n => Number.isFinite(n) ? (n < 0 ? '−$' : '$') + fx(Math.abs(n)) : '–';
+const sgn = (n, d = 2, suf = '') => Number.isFinite(n) ? (n > 0 ? '+' : n < 0 ? '−' : '') + fx(Math.abs(n), d) + suf : '–';
+const sum = (a, k) => a.reduce((s, x) => s + (+x[k] || 0), 0);
+const SYM = { XAUUSD: { pt: 0.01, dec: 2, step: '0.01' }, GBPUSD: { pt: 0.00001, dec: 5, step: '0.00001' } };
+const DEF = { balance: 5000, mode: 'LIVE', contract: { XAUUSD: 100, GBPUSD: 100000 }, riskAplus: 2, riskA: 1, riskMax: 4, dailyStopPct: 4, dailyStopLosses: 3, weeklyStopPct: 8, ddReset: 10, cooldown: 10, minRR: 2, goal: 100000, apiUrl: '', token: '' };
+const SWEEPS = ['EQH','EQL','PDH','PDL','Asia H','Asia L','London H','London L','Swing H/L','Inducement'];
+const POIS = ['OB','FVG','S2B','B2S','Flip zone','QM','Supply','Demand'];
+const EMO = ['Calm','Confident','Anxious','FOMO','Revenge','Bored'];
+const MIST = ['เข้าเร็วเกินไป','ขยับ SL ออก','FOMO/ไล่ราคา','เข้าตอนแท่งยังไม่ปิด','เข้าห่างจาก B','SL ทับ liquidity','ปิดก่อนแผน','ดูจอจนปิด BE เร็ว','เทรดนอกเวลา','ใกล้ข่าว','เกิน stop rule'];
+const MODELS = { A: 'A · Conservative', B: 'B · Aggressive', C: 'C · Flip zone', D: 'D · Pending HTF' };
+const CHK = [
+  ['ทิศตรง bias ระยะสั้น · HTF ไม่สวน · อยู่ฝั่งถูกของ 50%', 'must'],
+  ['ราคาอยู่ใน POI คุณภาพสูงจริง (ไม่ใช่แค่ใกล้)', ''],
+  ['กวาด liquidity แล้ว + CHoCH ด้วยแท่งปิด + ย่อเข้าจุดเข้า (ไม่ไล่)', 'must'],
+  ['อยู่ใน Killzone · ไม่ใกล้ข่าวแดง · ไม่ใช่วันหยุดสหรัฐฯ · ก่อน 22:30', 'auto'],
+  ['RR ≥ 1:2 จากราคาเข้าจริง · SL/TP ตามกฎ', 'must auto']
+];
+const DOW = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสฯ','ศุกร์','เสาร์'];
+const MON = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+const SHOTS_OPEN = [['h4','H4'],['m15','M15'],['m5','M5/M1']];
+
+// ---------- storage (IndexedDB, memory fallback) ----------
+let db = null; const mem = {};
+const idbOpen = () => new Promise(res => { try { const r = indexedDB.open('tradestack', 1); r.onupgradeneeded = () => r.result.createObjectStore('kv'); r.onsuccess = () => { db = r.result; res(); }; r.onerror = () => res(); } catch (e) { res(); } });
+const kget = k => new Promise(res => { if (!db) return res(mem[k]); try { const q = db.transaction('kv').objectStore('kv').get(k); q.onsuccess = () => res(q.result); q.onerror = () => res(mem[k]); } catch (e) { res(mem[k]); } });
+const kput = (k, v) => { mem[k] = v; if (!db) return; try { db.transaction('kv', 'readwrite').objectStore('kv').put(v, k); } catch (e) {} };
+
+let S = JSON.parse(JSON.stringify(DEF)), T = [], view = 'home', draft = null, closeD = null, histFilter = 'ALL', statPeriod = 'week', cal = null, CF = [], cfType = 'DEP', pulling = false;
+const save = () => { kput('trades', T); kput('settings', S); kput('cash', CF); };
+const nowISO = () => new Date().toISOString();
+
+// ---------- time (เวลาไทย) ----------
+const BK = 7 * 36e5;
+const bk = (d = new Date()) => { const x = new Date(+d + BK); return { h: x.getUTCHours(), mi: x.getUTCMinutes(), dow: x.getUTCDay(), d: x.getUTCDate(), mo: x.getUTCMonth(), key: x.toISOString().slice(0, 10) }; };
+const weekKey = d => { const x = new Date(+d + BK); const dow = (x.getUTCDay() + 6) % 7; x.setUTCDate(x.getUTCDate() - dow); return x.toISOString().slice(0, 10); };
+const tzOff = (tz, d) => { try { const a = new Date(d.toLocaleString('en-US', { timeZone: tz })), b = new Date(d.toLocaleString('en-US', { timeZone: 'UTC' })); return Math.round((a - b) / 36e5); } catch (e) { return null; } };
+const hm = m => String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
+function timeInfo(d = new Date()) {
+  const t = bk(d), m = t.h * 60 + t.mi;
+  const usS = tzOff('America/New_York', d) === -4 ? 1 : 0, ukS = tzOff('Europe/London', d) === 1 ? 1 : 0;
+  const lon = [(14 - ukS) * 60, (17 - ukS) * 60], ny = [(19 - usS) * 60, (22 - usS) * 60];
+  const inR = r => m >= r[0] && m < r[1];
+  const wd = t.dow >= 1 && t.dow <= 5, win = (m >= 780 && m < 960) || (m >= 1140 && m < 1380), late = m >= 1350;
+  const session = inR(ny) ? 'NY' : inR(lon) ? 'London' : (t.h >= 19 || t.h < 4) ? 'NY' : t.h >= 12 ? 'London' : 'Asia';
+  const kzName = inR(ny) ? 'NY Killzone' : inR(lon) ? 'London Killzone' : '';
+  return { t, m, lon, ny, inKz: !!kzName, kzName, wd, win, late, session, ok: wd && win && !!kzName && !late };
+}
+const fmtDT = iso => { if (!iso) return '–'; const t = bk(new Date(iso)); return t.d + ' ' + MON[t.mo] + ' ' + hm(t.h * 60 + t.mi); };
+
+// ---------- risk engine ----------
+function engine() {
+  const now = new Date(), tk = bk(now).key, wk = weekKey(now);
+  const closed = T.filter(x => x.status === 'CLOSED' && x.mode !== 'DEMO').sort((a, b) => a.closeTime < b.closeTime ? -1 : 1);
+  const ev = closed.map(x => ({ t: x.closeTime, v: x.pnlNet || 0, cash: false })).concat(CF.map(c => ({ t: c.date, v: c.type === 'DEP' ? c.amount : -c.amount, cash: true }))).sort((a, b) => a.t < b.t ? -1 : 1);
+  let eq = S.balance, peak = eq, mdd = 0; const curve = [eq];
+  for (const x of ev) { eq += x.v; if (x.cash) peak += x.v; peak = Math.max(peak, eq); mdd = Math.max(mdd, peak > 0 ? (peak - eq) / peak * 100 : 0); curve.push(eq); }
+  const dd = peak > 0 ? (peak - eq) / peak * 100 : 0;
+  const today = closed.filter(x => bk(new Date(x.closeTime)).key === tk), week = closed.filter(x => weekKey(new Date(x.closeTime)) === wk);
+  const tp = sum(today, 'pnlNet'), wp = sum(week, 'pnlNet');
+  const dayLoss = Math.max(0, -tp) / Math.max(1, eq - tp) * 100, weekLoss = Math.max(0, -wp) / Math.max(1, eq - wp) * 100;
+  const lossesToday = today.filter(x => x.pnlNet < 0).length;
+  let streak = 0; for (let i = closed.length - 1; i >= 0 && closed[i].pnlNet < 0; i--) streak++;
+  const lastLoss = [...closed].reverse().find(x => x.pnlNet < 0);
+  const cool = lastLoss ? Math.max(0, S.cooldown * 6e4 - (now - new Date(lastLoss.closeTime))) : 0;
+  const opened = T.filter(x => (x.status === 'CLOSED' || x.status === 'OPEN') && x.mode !== 'DEMO');
+  const compliance = opened.length ? opened.filter(x => (x.grade === 'A+' || x.grade === 'A') && !x.ruleBreak).length / opened.length * 100 : 100;
+  const avgR = closed.length ? sum(closed, 'r') / closed.length : 0;
+  const unlocked = closed.length >= 50 && avgR > 0 && compliance >= 90;
+  const stops = [];
+  if (dayLoss >= S.dailyStopPct) stops.push('ขาดทุนวันนี้ถึง ' + S.dailyStopPct + '% แล้ว');
+  if (lossesToday >= S.dailyStopLosses) stops.push('แพ้ครบ ' + S.dailyStopLosses + ' ไม้วันนี้แล้ว');
+  if (weekLoss >= S.weeklyStopPct) stops.push('ขาดทุนสัปดาห์นี้ถึง ' + S.weeklyStopPct + '% แล้ว');
+  if (streak >= 5) stops.push('แพ้ติดกัน 5 ไม้ — พัก 1 สัปดาห์ แล้วทบทวน journal');
+  const ddCap = dd >= S.ddReset;
+  const allow = g => { if (stops.length) return 0; const b = g === 'A+' ? (unlocked ? S.riskMax : S.riskAplus) : g === 'A' ? S.riskA : 0; return ddCap ? Math.min(b, 1) : b; };
+  return { eq, peak, dd, mdd, curve, dayLoss, weekLoss, lossesToday, streak, cool, compliance, avgR, unlocked, nClosed: closed.length, stops, ddCap, allow, week, closed };
+}
+const gradeOf = c => (!c[0] || !c[2] || !c[4]) ? 'NO' : (c[1] && c[3]) ? 'A+' : (c[1] || c[3]) ? 'A' : 'NO';
+const gLabel = g => g === 'NO' ? 'ไม่เข้า' : g;
+function lotFor(sym, dist, pct, bal) {
+  const cs = S.contract[sym] || 1, riskUsd = bal * pct / 100;
+  if (!dist || !pct) return { lot: 0, riskUsd: 0, real: 0 };
+  const lot = Math.floor(riskUsd / (dist * cs) * 100 + 1e-9) / 100;
+  return { lot, riskUsd, real: lot * dist * cs };
+}
+function calc(D) {
+  const e = num(D.entry), sl = num(D.sl), tp = num(D.tp), b = num(D.pointB), sell = D.dir === 'SELL';
+  const priced = e !== null && sl !== null && tp !== null;
+  const valid = priced && (sell ? (sl > e && tp < e) : (sl < e && tp > e));
+  const dist = priced ? Math.abs(e - sl) : 0;
+  const rr = valid ? Math.abs(tp - e) / dist : null;
+  const rrB = valid && b !== null && Math.abs(b - sl) > 0 ? Math.abs(tp - b) / Math.abs(b - sl) : null;
+  const ti = timeInfo();
+  const auto4 = ti.ok, auto5 = valid && rr >= S.minRR;
+  const c = D.c.map((v, i) => v === null ? (i === 3 ? auto4 : i === 4 ? auto5 : false) : v);
+  const overrides = [];
+  if (D.c[3] !== null && D.c[3] !== auto4) overrides.push('ข้อ 4');
+  if (D.c[4] !== null && D.c[4] !== auto5) overrides.push('ข้อ 5');
+  const g = gradeOf(c), E = engine(), pct = E.allow(g);
+  const L = lotFor(D.sym, dist, pct, E.eq);
+  return { e, sl, tp, b, priced, valid, dist, rr, rrB, ti, auto4, auto5, c, g, E, pct, overrides, ...L };
+}
+
+// ---------- images ----------
+const resize = file => new Promise((res, rej) => {
+  const fr = new FileReader(); fr.onerror = rej;
+  fr.onload = () => { const im = new Image(); im.onerror = rej; im.onload = () => {
+    const k = Math.min(1, 1280 / im.width), cv = document.createElement('canvas');
+    cv.width = Math.round(im.width * k); cv.height = Math.round(im.height * k);
+    cv.getContext('2d').drawImage(im, 0, 0, cv.width, cv.height); res(cv.toDataURL('image/jpeg', 0.8)); };
+    im.src = fr.result; };
+  fr.readAsDataURL(file);
+});
+const shotSlot = (key, label, src, scope) => `<label class="shot">${src && !src.startsWith('data:') ? `<span class="gold">อยู่ใน Drive</span>` : src ? `<img src="${esc(src)}" alt="กราฟ ${esc(label)}">` : `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="6" width="18" height="14" rx="2"/><circle cx="12" cy="13" r="3.5"/><path d="M8 6l1.5-2h5L16 6"/></svg>แนบรูป`}<em>${esc(label)}</em><input type="file" accept="image/*" data-shot="${key}" data-scope="${scope}" aria-label="แนบรูป ${esc(label)}"></label>`;
+
+// ---------- UI helpers ----------
+const toast = m => { const t = $('#toast'); t.textContent = m; t.classList.add('show'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), 2200); };
+const openModal = html => { $('#sheet').innerHTML = html; $('#modal').classList.add('show'); };
+const closeModal = () => $('#modal').classList.remove('show');
+const tags = (list, sel, grp) => `<div class="tgs">${list.map(x => `<button type="button" class="tg${sel.includes(x) ? ' on' : ''}" data-tg="${grp}" data-v="${esc(x)}">${esc(x)}</button>`).join('')}</div>`;
+const seg = (grp, opts, cur, cls = {}) => `<div class="seg">${opts.map(([v, l]) => `<button type="button" data-seg="${grp}" data-v="${v}" class="${cur === v ? 'on ' : ''}${cls[v] || ''}">${l}</button>`).join('')}</div>`;
+const bar = (v, max) => { const p = Math.min(100, v / max * 100); return `<div class="bar"><i style="width:${p}%;background:${p >= 100 ? 'var(--red)' : p >= 66 ? 'var(--gold)' : 'var(--grn)'}"></i></div>`; };
+const gChip = g => `<span class="tag" style="background:${g === 'A+' ? '#13301F' : g === 'A' ? '#1B2A44' : '#3A1A1E'};color:${g === 'A+' ? 'var(--grn)' : g === 'A' ? 'var(--blu)' : 'var(--red)'}">${gLabel(g)}</span>`;
+const dirChip = d => `<span class="tag" style="background:${d === 'SELL' ? '#3A1A1E' : '#13301F'};color:${d === 'SELL' ? 'var(--red)' : 'var(--grn)'}">${d}</span>`;
+const QUAD = { GW: 'ถูกกฎ · ชนะ', GL: 'ถูกกฎ · แพ้', BW: 'ผิดกฎแต่ชนะ', BL: 'ผิดกฎ · แพ้' };
+const quadOf = x => { const good = (x.grade === 'A+' || x.grade === 'A') && !x.ruleBreak && !(x.mistakes || []).length; return (good ? 'G' : 'B') + (x.r > 0 ? 'W' : 'L'); };
+
+// ---------- views ----------
+function header(E) {
+  const t = bk();
+  return `<div class="top"><div class="brand"><img class="logo" src="icons/icon-192.png" alt="" width="32" height="32">Trade Stack</div>
+  <div class="row"><span class="chip" style="background:${S.mode === 'LIVE' ? '#13301F' : '#1B2A44'};color:${S.mode === 'LIVE' ? 'var(--grn)' : 'var(--blu)'}">${S.mode}</span><span class="chip mono">${money(E.eq)}</span></div></div>
+  <div class="sub" id="clock">${DOW[t.dow]} ${t.d} ${MON[t.mo]} · ${hm(t.h * 60 + t.mi)}</div>`;
+}
+function timeStrip() {
+  const ti = timeInfo(), m = ti.m;
+  let a = '', b = '';
+  if (!ti.wd) { a = 'วันหยุดตลาด'; b = 'เทรด จ.–ศ.'; }
+  else if (ti.late) { a = 'ห้ามเปิดไม้ใหม่'; b = 'หลัง 22:30 · ปิดทุกไม้ 23:00'; }
+  else if (ti.inKz) { const end = ti.kzName.startsWith('NY') ? ti.ny[1] : ti.lon[1]; a = ti.kzName + ' เปิดอยู่'; b = 'เหลือ ' + hm(end - m); }
+  else { const nx = [ti.lon[0], ti.ny[0]].find(x => x > m); a = 'นอก Killzone'; b = nx ? 'ถัดไป ' + hm(nx) + ' (อีก ' + hm(nx - m) + ')' : 'วันนี้หมด Killzone แล้ว'; }
+  return `<div class="g2" id="tstrip"><div class="tile"><span class="lab">${esc(a)}</span><b class="${ti.inKz && !ti.late ? 'gold' : ''}" style="font-size:14px">${esc(b)}</b></div>
+  <div class="tile"><span class="lab">Session · ข่าวแดง/วันหยุดสหรัฐฯ</span><b style="font-size:14px">${ti.session} · เช็กเอง</b></div></div>`;
+}
+function vHome() {
+  const E = engine(), open = T.filter(x => x.status === 'OPEN'), pend = T.filter(x => x.status === 'PENDING');
+  const wk = E.week, wins = wk.filter(x => x.r > 0).length;
+  const pts = wk.reduce((s, x) => s + (x.points || 0), 0);
+  window._quick = window._quick || { sym: 'XAUUSD', dist: '3.5' };
+  const ql = window._quick;
+  const qd = num(ql.dist) ? (ql.sym === 'GBPUSD' ? num(ql.dist) * 0.0001 : num(ql.dist)) : 0;
+  const LA = lotFor(ql.sym, qd, E.allow('A+'), E.eq), LB = lotFor(ql.sym, qd, E.allow('A'), E.eq);
+  return header(E) + `
+  ${T.some(x => x.sample) ? `<div class="warn">กำลังแสดงข้อมูลตัวอย่าง · ลบได้ที่ ตั้งค่า › ล้างข้อมูล</div>` : ''}
+  ${E.stops.length ? `<div class="warn r"><b>หยุดเทรด:</b> ${E.stops.map(esc).join(' · ')}</div>` : ''}
+  ${E.cool > 0 ? `<div class="warn">พักจากจอหลังแพ้ — เปิดไม้ใหม่ได้ในอีก ${Math.ceil(E.cool / 6e4)} นาที</div>` : ''}
+  <div class="card">
+    <div class="row between"><span class="lab">Risk ที่ใช้ได้ตอนนี้</span><span class="lab">${E.unlocked ? 'ปลดล็อก 3–4% แล้ว' : 'ปลดล็อก 3–4%: ' + Math.min(E.nClosed, 50) + '/50 ไม้'}</span></div>
+    <div class="g2"><div class="tile row between" style="flex-direction:row;align-items:center"><span class="gold" style="font-weight:700">A+</span><b style="font-size:20px">${E.allow('A+')}%</b></div>
+    <div class="tile row between" style="flex-direction:row;align-items:center"><span class="blue" style="font-weight:700">A</span><b style="font-size:20px">${E.allow('A')}%</b></div></div>
+    <div class="g2" style="gap:10px 14px">
+      <div><div class="row between lab"><span>ขาดทุนวันนี้</span><span class="mono">${fx(E.dayLoss, 1)} / ${S.dailyStopPct}%</span></div>${bar(E.dayLoss, S.dailyStopPct)}</div>
+      <div><div class="row between lab"><span>แพ้วันนี้</span><span class="mono">${E.lossesToday} / ${S.dailyStopLosses} ไม้</span></div>${bar(E.lossesToday, S.dailyStopLosses)}</div>
+      <div><div class="row between lab"><span>สัปดาห์นี้</span><span class="mono">${fx(E.weekLoss, 1)} / ${S.weeklyStopPct}%</span></div>${bar(E.weekLoss, S.weeklyStopPct)}</div>
+      <div><div class="row between lab"><span>DD จาก peak</span><span class="mono">${fx(E.dd, 1)} / ${S.ddReset}%</span></div>${bar(E.dd, S.ddReset)}</div>
+    </div>
+    ${E.ddCap ? '<div class="warn r">Drawdown ≥ ' + S.ddReset + '% — ใช้ 1% ทุกไม้จนพอร์ตกลับไปที่ peak</div>' : ''}
+  </div>
+  <div class="card" style="border-color:#5a4a20">
+    <div class="row between"><span class="h">คำนวณ Lot</span><span class="lab">ทุน ${money(E.eq)}</span></div>
+    <div class="row">${seg('qsym', [['XAUUSD', 'XAUUSD'], ['GBPUSD', 'GBPUSD']], ql.sym)}
+    <label class="fld" style="flex:0 0 120px"><span>ระยะ SL ${ql.sym === 'GBPUSD' ? '(pips)' : '($)'}</span><input id="qdist" inputmode="decimal" value="${esc(ql.dist)}"></label></div>
+    <div class="g2" id="qout">${quickOut(LA, LB, E)}</div>
+  </div>
+  ${timeStrip()}
+  <button class="btn pri" data-go="new"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/></svg>เริ่มเช็กลิสต์ก่อนเข้า</button>
+  ${pend.length ? `<div class="row between"><span class="h">Limit ที่รอ fill</span><span class="lab">${pend.length} รายการ</span></div>${pend.map(tradeCard).join('')}` : ''}
+  <div class="row between"><span class="h">ไม้ที่เปิดอยู่</span><span class="lab">${open.length} ไม้</span></div>
+  ${open.length ? open.map(tradeCard).join('') : '<div class="empty card">ยังไม่มีไม้ที่เปิดอยู่</div>'}
+  <div class="row between"><span class="h">สัปดาห์นี้</span><span class="lab">${wk.length} ไม้ปิดแล้ว</span></div>
+  <div class="g4">
+    <div class="tile"><span class="lab">Points</span><b class="${pts >= 0 ? 'ok' : 'bad'}">${sgn(pts, 0)}</b></div>
+    <div class="tile"><span class="lab">รวม R</span><b>${sgn(sum(wk, 'r'), 1)}</b></div>
+    <div class="tile"><span class="lab">Comply</span><b>${fx(E.compliance, 0)}%</b></div>
+    <div class="tile"><span class="lab">ชนะ</span><b>${wins}/${wk.length}</b></div>
+  </div>
+  <div><div class="row between lab"><span>เป้าพอร์ต</span><span class="mono">${money(E.eq)} / ${money(S.goal)}</span></div><div class="bar" style="height:8px"><i style="width:${Math.max(0, Math.min(100, E.eq / S.goal * 100))}%;background:var(--gold)"></i></div></div>`;
+}
+const quickOut = (LA, LB, E) => `<div class="tile"><span class="lab">A+ · ${E.allow('A+')}%</span><b class="gold" style="font-size:20px">${fx(LA.lot)} lot</b><span class="lab mono">เสี่ยง ${money(LA.real)}</span></div>
+  <div class="tile"><span class="lab">A · ${E.allow('A')}%</span><b class="blue" style="font-size:20px">${fx(LB.lot)} lot</b><span class="lab mono">เสี่ยง ${money(LB.real)}</span></div>`;
+
+function tradeCard(x) {
+  const d = (SYM[x.symbol] || SYM.XAUUSD).dec;
+  return `<button class="trade" data-open="${esc(x.id)}">
+  <div class="row between"><div class="row"><b>${esc(x.symbol)}</b>${dirChip(x.dir)}${gChip(x.grade)}${x.ruleBreak ? '<span class="tag t-must">ผิดกฎ</span>' : ''}</div>
+  <span class="mono lab">${x.status === 'SKIPPED' ? 'Skipped' : x.status === 'CANCELLED' ? 'ยกเลิก' : fx(x.lot) + ' lot · ' + fx(x.riskPct, 1) + '%'}</span></div>
+  <div class="g4"><div><div class="lab">Entry</div><div class="mono">${fx(x.entry, d)}</div></div><div><div class="lab">SL</div><div class="mono bad">${fx(x.sl, d)}</div></div>
+  <div><div class="lab">TP</div><div class="mono ok">${fx(x.tp, d)}</div></div><div><div class="lab">${x.status === 'CLOSED' ? 'ผล' : 'RR'}</div><div class="mono ${x.status === 'CLOSED' ? (x.r > 0 ? 'ok' : 'bad') : ''}">${x.status === 'CLOSED' ? sgn(x.r, 2, 'R') : '1:' + fx(x.rr, 1)}</div></div></div>
+  <div class="lab">${fmtDT(x.openTime)} · ${esc(x.session)}${x.status === 'CLOSED' ? ' · ' + QUAD[quadOf(x)] : ''}${x.status === 'OPEN' ? ' · แตะเพื่อปิดไม้' : ''}${x.status === 'PENDING' ? ' · <span class="gold">Limit รอ fill — แตะเพื่ออัปเดต</span>' : ''}${x.status === 'CANCELLED' ? ' · ' + esc(x.cancelReason || '') : ''}</div></button>`;
+}
+
+function newDraft() { return { sym: 'XAUUSD', dir: 'SELL', model: 'A', orderType: 'MARKET', entry: '', pointB: '', sl: '', tp: '', lot: '', lotEdited: false, c: [false, false, false, null, null], sweep: [], poi: [], emo: [], context: '', trigger: '', shots: {} }; }
+function vNew() {
+  if (!draft) draft = newDraft();
+  const D = draft, step = SYM[D.sym].step;
+  return `<div class="row between"><span style="font-size:20px;font-weight:700">เช็กลิสต์ก่อนเข้า</span><button class="btn" style="min-height:40px" data-act="reset-draft">ล้างฟอร์ม</button></div>
+  <div class="g2">${seg('sym', [['XAUUSD', 'XAUUSD'], ['GBPUSD', 'GBPUSD']], D.sym)}${seg('dir', [['BUY', 'BUY'], ['SELL', 'SELL']], D.dir, { BUY: 'buy', SELL: 'sell' })}</div>
+  <select id="f-model" aria-label="Entry model">${Object.entries(MODELS).map(([k, v]) => `<option value="${k}"${D.model === k ? ' selected' : ''}>Entry model ${v}</option>`).join('')}</select>
+  ${seg('otype', [['MARKET', 'Market (เข้าแล้ว)'], ['LIMIT', 'Limit ที่ B (รอ fill)']], D.orderType)}
+  <div class="g2">
+    <label class="fld"><span>${D.orderType === 'LIMIT' ? 'Entry = ราคา limit' : 'Entry (ราคาเข้าจริง)'}</span><input id="f-entry" inputmode="decimal" step="${step}" value="${esc(D.entry)}" placeholder="3573.0"></label>
+    <label class="fld"><span>จุด B (ถ้ามี)</span><input id="f-pointB" inputmode="decimal" value="${esc(D.pointB)}" placeholder="3574.0"></label>
+    <label class="fld"><span>SL</span><input id="f-sl" inputmode="decimal" value="${esc(D.sl)}" placeholder="3576.5"></label>
+    <label class="fld"><span>TP</span><input id="f-tp" inputmode="decimal" value="${esc(D.tp)}" placeholder="3555.0"></label>
+  </div>
+  <div class="card" style="gap:0">${CHK.map(([t, k], i) => `<label class="chk"><input type="checkbox" data-c="${i}"${calc(D).c[i] ? ' checked' : ''}><span style="flex:1"><span style="font-size:14px;font-weight:600">${i + 1}. ${esc(t)}</span><span class="lab" style="display:block" id="hint${i}"></span></span>${k.includes('must') ? '<span class="tag t-must">บังคับ</span>' : ''}${k.includes('auto') ? '<span class="tag t-auto">ระบบตรวจ</span>' : ''}</label>`).join('')}</div>
+  <div class="card" id="calc"></div>
+  <label class="fld"><span>Lot ที่จะใช้จริง (ระบบเติมให้ แก้ได้)</span><input id="f-lot" inputmode="decimal" value="${esc(D.lot)}"></label>
+  <details class="card"><summary>รายละเอียด setup (Liquidity · POI · อารมณ์ · แผน)</summary>
+    <span class="lab">Liquidity ที่ถูกกวาด</span>${tags(SWEEPS, D.sweep, 'sweep')}
+    <span class="lab">POI</span>${tags(POIS, D.poi, 'poi')}
+    <span class="lab">อารมณ์ก่อนเข้า</span>${tags(EMO, D.emo, 'emo')}
+    <span class="lab">Context (ภาพใหญ่)</span><textarea id="f-context" placeholder="H4 ขาลง, ราคาขึ้นมา premium 68%, มี EQH ค้าง">${esc(D.context)}</textarea>
+    <span class="lab">Trigger (สิ่งที่ทำให้เข้า)</span><textarea id="f-trigger" placeholder="กวาด EQH → M5 ปิด CHoCH → M1 ตัว N ที่ B">${esc(D.trigger)}</textarea>
+  </details>
+  <div class="card"><span class="h">รูปกราฟตอนเข้า</span><div class="shots">${SHOTS_OPEN.map(([k, l]) => shotSlot(k, l, D.shots[k], 'draft')).join('')}</div><span class="note">ระบบย่อรูปเหลือกว้าง 1280px อัตโนมัติ และส่งขึ้น Google Drive เมื่อเชื่อมต่อแล้ว</span></div>
+  <button class="btn pri" data-act="open-trade">${D.orderType === 'LIMIT' ? 'ตั้ง Limit · บันทึกเป็น Pending' : 'เปิดไม้ · บันทึก'}</button>
+  <button class="btn" data-act="skip-trade">ไม่เข้า — บันทึกเป็น Skipped</button>`;
+}
+function updateCalc() {
+  const D = draft, C = calc(D), el = $('#calc'); if (!el) return;
+  const d = SYM[D.sym].dec;
+  if (!D.lotEdited) { D.lot = C.lot ? fx(C.lot) : ''; const li = $('#f-lot'); if (li) li.value = D.lot; }
+  const warns = [];
+  if (C.priced && !C.valid) warns.push(['r', D.dir === 'SELL' ? 'Sell: SL ต้องอยู่เหนือ Entry และ TP อยู่ใต้ Entry' : 'Buy: SL ต้องอยู่ใต้ Entry และ TP อยู่เหนือ Entry']);
+  C.E.stops.forEach(s => warns.push(['r', 'หยุดเทรด: ' + s]));
+  if (C.E.cool > 0) warns.push(['', 'พักจากจอหลังแพ้ — อีก ' + Math.ceil(C.E.cool / 6e4) + ' นาที']);
+  if (C.valid && C.rr < S.minRR && C.rrB >= S.minRR) warns.push(['', 'ถ้า limit ที่ B จะได้ 1:' + fx(C.rrB, 2) + ' — เข้าห่างจาก B ทำให้ RR ไม่ผ่าน']);
+  if (C.overrides.length) warns.push(['', 'คุณแก้ทับผลที่ระบบตรวจ (' + C.overrides.join(', ') + ') — จะถูกบันทึกไว้']);
+  if (bk().mo === 11) warns.push(['', 'ธันวาคม: ตั้ง TP สั้นลง']);
+  el.innerHTML = `<div class="row" style="gap:14px"><div class="grade g${C.g}">${gLabel(C.g)}</div>
+  <div class="g2" style="flex:1;gap:6px 10px">
+    <div><div class="lab">Risk ที่อนุญาต</div><div class="mono" style="font-size:16px">${C.pct}% · ${money(C.riskUsd)}</div></div>
+    <div><div class="lab">Lot แนะนำ</div><div class="mono gold" style="font-size:16px">${C.lot ? fx(C.lot) : '–'}</div></div>
+    <div><div class="lab">RR (ราคาเข้าจริง)</div><div class="mono ${C.rr >= S.minRR ? 'ok' : 'bad'}" style="font-size:16px">${C.rr ? '1:' + fx(C.rr, 2) : '–'}</div></div>
+    <div><div class="lab">ระยะ SL</div><div class="mono" style="font-size:16px">${C.dist ? fx(C.dist, d) : '–'}</div></div>
+  </div></div>
+  ${C.lot ? `<div class="lab mono">เสี่ยงจริง ${money(C.real)} · ${fx(C.real / C.E.eq * 100, 2)}% ของทุน${C.rrB ? ' · RR ถ้า limit ที่ B 1:' + fx(C.rrB, 2) : ''}</div>` : ''}
+  ${warns.map(([k, w]) => `<div class="warn ${k}">${esc(w)}</div>`).join('')}`;
+  const ti = C.ti;
+  const h3 = $('#hint3'); if (h3) h3.textContent = 'ระบบ: ' + (C.auto4 ? 'ผ่าน' : 'ไม่ผ่าน') + ' — ' + (ti.wd ? '' : 'วันหยุด · ') + (ti.inKz ? ti.kzName : 'นอก Killzone') + (ti.late ? ' · เลย 22:30' : '') + ' · ข่าวแดง/วันหยุดสหรัฐฯ ให้เช็กเอง';
+  const h4 = $('#hint4'); if (h4) h4.textContent = 'ระบบ: ' + (C.auto5 ? 'ผ่าน' : 'ไม่ผ่าน') + (C.rr ? ' — RR 1:' + fx(C.rr, 2) : ' — ใส่ Entry/SL/TP');
+  document.querySelectorAll('[data-c]').forEach(cb => { cb.checked = C.c[+cb.dataset.c]; });
+}
+
+function buildTrade(status, reason) {
+  const D = draft, C = calc(D), now = new Date().toISOString(), ti = C.ti, t = bk();
+  const seq = T.filter(x => x.id.startsWith('T' + t.key.replace(/-/g, ''))).length + 1;
+  const mistakes = [];
+  if (C.valid && C.rr < S.minRR && C.rrB >= S.minRR) mistakes.push('เข้าห่างจาก B');
+  if (!ti.ok) mistakes.push('เทรดนอกเวลา');
+  if (D.emo.includes('FOMO')) mistakes.push('FOMO/ไล่ราคา');
+  const lot = num(D.lot) || 0, cs = S.contract[D.sym];
+  return { id: 'T' + t.key.replace(/-/g, '') + '-' + String(seq).padStart(3, '0'), mode: S.mode, status, symbol: D.sym, dir: D.dir, model: D.model, orderType: D.orderType, updatedAt: now,
+    openTime: now, session: ti.session, weekday: DOW[t.dow], inKillzone: ti.inKz, c: C.c, overrides: C.overrides, grade: C.g,
+    ruleBreak: status !== 'SKIPPED' && (C.g === 'NO' || C.E.stops.length > 0 || C.E.cool > 0), ruleBreakReason: reason || '',
+    entry: C.e, pointB: C.b, sl: C.sl, slFinal: C.sl, tp: C.tp, lot, riskPct: status === 'SKIPPED' ? 0 : C.E.eq ? lot * C.dist * cs / C.E.eq * 100 : 0,
+    riskUsd: lot * C.dist * cs, allowedPct: C.pct, balanceBefore: C.E.eq, rr: C.rr, rrB: C.rrB, sweep: D.sweep, poi: D.poi, emotion: D.emo, context: D.context, trigger: D.trigger,
+    shots: { ...D.shots }, mistakes: status === 'SKIPPED' ? [] : mistakes, synced: false };
+}
+function vClose() {
+  const x = T.find(t => t.id === closeD.id); if (!x) { view = 'home'; return vHome(); }
+  const d = (SYM[x.symbol] || SYM.XAUUSD).dec, C = closeD;
+  return `<div class="row between"><span style="font-size:20px;font-weight:700">ปิดไม้</span><button class="btn" style="min-height:40px" data-go="home">ยกเลิก</button></div>
+  ${tradeCard(x)}
+  <div class="g2">
+    <label class="fld"><span>ราคาออก</span><input id="c-exit" inputmode="decimal" value="${esc(C.exit)}"></label>
+    <label class="fld"><span>SL สุดท้าย</span><input id="c-slFinal" inputmode="decimal" value="${esc(C.slFinal)}"></label>
+  </div>
+  <span class="lab">ออกแบบไหน</span>${seg('exitType', [['TP', 'TP'], ['SL', 'SL'], ['BE', 'BE'], ['Manual', 'ปิดเอง'], ['23:00', '23:00']], C.exitType)}
+  <div class="g3">
+    <label class="fld"><span>P/L (USD)</span><input id="c-pnl" inputmode="decimal" value="${esc(C.pnl)}"></label>
+    <label class="fld"><span>Commission</span><input id="c-comm" inputmode="decimal" value="${esc(C.comm)}"></label>
+    <label class="fld"><span>Swap</span><input id="c-swap" inputmode="decimal" value="${esc(C.swap)}"></label>
+  </div>
+  <div class="card" id="cres"></div>
+  <span class="lab">ความผิดพลาด (ระบบติ๊กให้บางข้อแล้ว)</span>${tags(MIST, C.mistakes, 'mist')}
+  <span class="lab">ทำตามแผนแค่ไหน</span>${seg('plan', [['1', '1'], ['2', '2'], ['3', '3'], ['4', '4'], ['5', '5']], C.plan)}
+  <span class="lab">ทำไมชนะ/แพ้</span><textarea id="c-why">${esc(C.why)}</textarea>
+  <span class="lab">ครั้งหน้าต้องแก้อะไร</span><textarea id="c-fix">${esc(C.fix)}</textarea>
+  <div class="card"><span class="h">รูปกราฟ</span><div class="shots">${[...SHOTS_OPEN, ['after', 'ตอนออก']].map(([k, l]) => shotSlot(k, l, C.shots[k], 'close')).join('')}</div></div>
+  <button class="btn pri" data-act="save-close">บันทึกการปิดไม้</button>
+  <button class="btn dng" data-act="del-trade" data-id="${esc(x.id)}">ลบไม้นี้</button>`;
+}
+function closeCalc() {
+  const x = T.find(t => t.id === closeD.id), C = closeD, el = $('#cres'); if (!x || !el) return;
+  const ex = num(C.exit), sign = x.dir === 'SELL' ? -1 : 1, cs = S.contract[x.symbol];
+  if (!C.pnlEdited && ex !== null) { C.pnl = fx((ex - x.entry) * sign * cs * x.lot).replace(/,/g, ''); const p = $('#c-pnl'); if (p) p.value = C.pnl; }
+  const net = (num(C.pnl) || 0) + (num(C.comm) || 0) + (num(C.swap) || 0);
+  const r = x.riskUsd ? net / x.riskUsd : 0, pts = ex !== null ? (ex - x.entry) * sign / (SYM[x.symbol] || SYM.XAUUSD).pt : 0;
+  const sf = num(C.slFinal), moved = sf !== null && (x.dir === 'SELL' ? sf > x.sl : sf < x.sl);
+  if (moved && !C.mistakes.includes('ขยับ SL ออก')) { C.mistakes.push('ขยับ SL ออก'); document.querySelectorAll('[data-tg="mist"]').forEach(b => b.classList.toggle('on', C.mistakes.includes(b.dataset.v))); }
+  el.innerHTML = `<div class="g3"><div class="tile"><span class="lab">Net P/L</span><b class="${net >= 0 ? 'ok' : 'bad'}">${money(net)}</b></div>
+  <div class="tile"><span class="lab">ผล (R)</span><b class="${r >= 0 ? 'ok' : 'bad'}">${sgn(r, 2, 'R')}</b></div><div class="tile"><span class="lab">Points</span><b>${sgn(pts, 0)}</b></div></div>
+  ${moved ? '<div class="warn r">SL สุดท้ายห่างกว่า SL ตอนเข้า — ติดแท็ก "ขยับ SL ออก" ให้แล้ว</div>' : ''}`;
+}
+
+function periodFilter(list) {
+  const now = new Date();
+  if (statPeriod === 'week') { const wk = weekKey(now); return list.filter(x => weekKey(new Date(x.closeTime)) === wk); }
+  if (statPeriod === 'month') { const m = bk(now).key.slice(0, 7); return list.filter(x => bk(new Date(x.closeTime)).key.slice(0, 7) === m); }
+  return list;
+}
+const CAL_COL = r => r === null ? null : r >= 2 ? ['#0F766E', '#FFFFFF'] : r > 0 ? ['#1D4D47', '#9FE3D8'] : r === 0 ? ['#2A313C', '#C9CED6'] : r > -2 ? ['#4A2A22', '#F6B49A'] : ['#C2410C', '#FFFFFF'];
+function calendar(closed) {
+  const now = bk(); if (!cal) cal = { y: +now.key.slice(0, 4), m: now.mo };
+  const { y, m } = cal, first = new Date(Date.UTC(y, m, 1)).getUTCDay(), days = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
+  const byDay = {}; closed.forEach(x => { const k = bk(new Date(x.closeTime)).key; (byDay[k] = byDay[k] || []).push(x); });
+  const pre = y + '-' + String(m + 1).padStart(2, '0') + '-';
+  const monthT = closed.filter(x => bk(new Date(x.closeTime)).key.startsWith(pre));
+  let cells = '';
+  for (let i = 0; i < first; i++) cells += '<span></span>';
+  for (let d = 1; d <= days; d++) {
+    const k = pre + String(d).padStart(2, '0'), a = byDay[k], r = a ? sum(a, 'r') : null, col = CAL_COL(r);
+    const st = col ? `background:${col[0]};color:${col[1]}` : '';
+    cells += `<button class="cday${k === now.key ? ' today' : ''}" style="${st}" ${a ? `data-day="${k}"` : 'disabled'} aria-label="${d} ${MON[m]}${a ? ' ' + sgn(r, 1, 'R') + ' ' + a.length + ' ไม้' : ' ไม่มีเทรด'}">${d}${a ? `<small>${sgn(r, 1)}</small>` : ''}</button>`;
+  }
+  const w = monthT.filter(x => x.r > 0).length;
+  return `<div class="card"><div class="row between"><button class="btn" style="min-height:40px;width:44px;padding:0" data-act="cal-prev" aria-label="เดือนก่อน">‹</button>
+  <div style="text-align:center"><div class="h">${['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'][m]} ${y + 543}</div>
+  <div class="lab mono">${sgn(sum(monthT, 'r'), 1, 'R')} · ${monthT.length} ไม้ · WR ${monthT.length ? fx(w / monthT.length * 100, 0) : 0}%</div></div>
+  <button class="btn" style="min-height:40px;width:44px;padding:0" data-act="cal-next" aria-label="เดือนถัดไป">›</button></div>
+  <div class="cal">${['อา','จ','อ','พ','พฤ','ศ','ส'].map(x => `<span class="dh">${x}</span>`).join('')}${cells}</div>
+  <div class="calleg"><span><i style="background:#0F766E"></i>≥ +2R</span><span><i style="background:#1D4D47"></i>กำไร</span><span><i style="background:#2A313C"></i>0R</span><span><i style="background:#4A2A22"></i>ขาดทุน</span><span><i style="background:#C2410C"></i>≤ −2R</span></div>
+  <span class="note">แตะวันที่เพื่อดูไม้ของวันนั้น</span></div>`;
+}
+function vStats() {
+  const E = engine(), all = E.closed, L = periodFilter(all);
+  const wins = L.filter(x => x.r > 0), gw = sum(wins, 'pnlNet'), gl = -sum(L.filter(x => x.pnlNet < 0), 'pnlNet');
+  const pts = E.curve, mdd = E.mdd;
+  const lim = T.filter(x => x.orderType === 'LIMIT' && x.status !== 'PENDING'), limF = lim.filter(x => x.status !== 'CANCELLED').length;
+  const by = (key, fn) => { const m = {}; L.forEach(x => { const ks = fn ? fn(x) : [x[key]]; ks.forEach(k => { (m[k] = m[k] || []).push(x); }); }); return Object.entries(m); };
+  const rowsOf = arr => arr.map(([k, a]) => `<tr><td>${esc(k)}</td><td class="mono">${a.length}</td><td class="mono">${fx(a.filter(x => x.r > 0).length / a.length * 100, 0)}%</td><td class="mono ${sum(a, 'r') >= 0 ? 'ok' : 'bad'}">${sgn(sum(a, 'r'), 1)}</td></tr>`).join('');
+  const tbl = (title, arr) => `<div class="card"><span class="h">${title}</span>${arr.length ? `<table><thead><tr><th>กลุ่ม</th><th>ไม้</th><th>Win</th><th>รวม R</th></tr></thead><tbody>${rowsOf(arr)}</tbody></table>` : '<div class="empty">ยังไม่มีข้อมูล</div>'}</div>`;
+  const mist = by(null, x => x.mistakes || []).map(([k, a]) => [k, a.length, sum(a.filter(x => x.r < 0), 'r')]).sort((a, b) => a[2] - b[2]);
+  const qd = { GW: 0, GL: 0, BW: 0, BL: 0 }; L.forEach(x => qd[quadOf(x)]++);
+  return `<div class="row between"><span style="font-size:20px;font-weight:700">สถิติ</span></div>
+  ${calendar(all)}
+  ${seg('period', [['week', 'สัปดาห์นี้'], ['month', 'เดือนนี้'], ['all', 'ทั้งหมด']], statPeriod)}
+  <div class="g2">
+    <div class="tile"><span class="lab">Net P/L</span><b class="${sum(L, 'pnlNet') >= 0 ? 'ok' : 'bad'}">${money(sum(L, 'pnlNet'))}</b></div>
+    <div class="tile"><span class="lab">Win rate</span><b>${L.length ? fx(wins.length / L.length * 100, 0) : 0}% · ${wins.length}/${L.length}</b></div>
+    <div class="tile"><span class="lab">Expectancy (R เฉลี่ย)</span><b>${sgn(L.length ? sum(L, 'r') / L.length : 0, 2, 'R')}</b></div>
+    <div class="tile"><span class="lab">Profit factor</span><b>${gl ? fx(gw / gl, 2) : (gw ? '∞' : '–')}</b></div>
+    <div class="tile"><span class="lab">Points</span><b>${sgn(sum(L, 'points'), 0)}</b></div>
+    <div class="tile"><span class="lab">Max DD (ทั้งหมด)</span><b>${fx(mdd, 1)}%</b></div>
+    <div class="tile"><span class="lab">Compliance</span><b>${fx(E.compliance, 0)}%</b></div>
+    <div class="tile"><span class="lab">แพ้ติดตอนนี้</span><b>${E.streak} ไม้</b></div>
+    <div class="tile"><span class="lab">Limit ที่ B ได้ fill</span><b>${lim.length ? fx(limF / lim.length * 100, 0) + '% · ' + limF + '/' + lim.length : '–'}</b></div>
+    <div class="tile"><span class="lab">ฝาก − ถอน</span><b>${money(CF.reduce((s, c) => s + (c.type === 'DEP' ? c.amount : -c.amount), 0))}</b></div>
+  </div>
+  <div class="card"><div class="row between"><span class="h">Equity curve</span><span class="lab mono">${money(E.eq)}</span></div><div class="fig"><svg id="eqsvg" role="img" aria-label="กราฟ equity"></svg></div></div>
+  <div class="card"><span class="h">กระบวนการ × ผลลัพธ์</span><div class="g2">
+    <div class="tile"><span class="lab">ถูกกฎ · ชนะ</span><b class="ok">${qd.GW}</b></div><div class="tile"><span class="lab">ถูกกฎ · แพ้ (รับได้)</span><b>${qd.GL}</b></div>
+    <div class="tile"><span class="lab">ผิดกฎแต่ชนะ (อันตราย)</span><b class="gold">${qd.BW}</b></div><div class="tile"><span class="lab">ผิดกฎ · แพ้</span><b class="bad">${qd.BL}</b></div></div></div>
+  ${tbl('แยกตามเกรด', by('grade').map(([k, a]) => [gLabel(k), a]))}
+  ${tbl('แยกตาม Session', by('session'))}
+  ${tbl('แยกตาม Symbol', by('symbol'))}
+  ${tbl('แยกตามวัน', by('weekday'))}
+  <div class="card"><span class="h">ความผิดพลาด → R ที่เสียไป</span>${mist.length ? `<table><thead><tr><th>ความผิดพลาด</th><th>ครั้ง</th><th>R ที่เสีย</th></tr></thead><tbody>${mist.map(([k, n, r]) => `<tr><td>${esc(k)}</td><td class="mono">${n}</td><td class="mono bad">${sgn(r, 1)}</td></tr>`).join('')}</tbody></table>` : '<div class="empty">ยังไม่มีความผิดพลาดที่บันทึกไว้</div>'}</div>`
+  + `<template id="eqdata">${pts.join(',')}</template>`;
+}
+function drawEq() {
+  const s = $('#eqsvg'), dt = $('#eqdata'); if (!s || !dt) return;
+  const p = dt.innerHTML.split(',').map(Number), W = s.clientWidth, H = s.clientHeight; if (!W) return;
+  const mn = Math.min(...p), mx = Math.max(...p), pad = 8, rg = mx - mn || 1;
+  const X = i => pad + i * (W - 2 * pad) / Math.max(1, p.length - 1), Y = v => H - pad - (v - mn) / rg * (H - 2 * pad);
+  const line = p.map((v, i) => (i ? 'L' : 'M') + X(i).toFixed(1) + ' ' + Y(v).toFixed(1)).join(' ');
+  s.innerHTML = `<line x1="${pad}" x2="${W - pad}" y1="${Y(S.balance)}" y2="${Y(S.balance)}" stroke="#3a4250" stroke-dasharray="4 4"/>
+  <path d="${line} L${X(p.length - 1)} ${H - pad} L${pad} ${H - pad}Z" fill="rgba(224,176,74,.12)"/><path d="${line}" fill="none" stroke="#E0B04A" stroke-width="2"/>`;
+}
+function vHistory() {
+  const L = T.filter(x => histFilter === 'ALL' || x.status === histFilter).sort((a, b) => a.openTime < b.openTime ? 1 : -1);
+  return `<div class="row between"><span style="font-size:20px;font-weight:700">ประวัติ</span><span class="lab">${L.length} รายการ</span></div>
+  <div style="overflow-x:auto">${seg('hist', [['ALL', 'ทั้งหมด'], ['PENDING', 'รอ fill'], ['OPEN', 'เปิดอยู่'], ['CLOSED', 'ปิดแล้ว'], ['SKIPPED', 'Skipped'], ['CANCELLED', 'ยกเลิก']], histFilter)}</div>
+  ${L.length ? L.map(tradeCard).join('') : '<div class="empty card">ยังไม่มีรายการ</div>'}`;
+}
+function detail(x) {
+  const d = (SYM[x.symbol] || SYM.XAUUSD).dec, shots = Object.entries({ ...(x.shotUrls || {}), ...(x.shots || {}) }).filter(([, v]) => v);
+  return `<div class="row between"><span style="font-size:18px;font-weight:700">${esc(x.id)}</span><button class="btn" style="min-height:40px" data-act="close-modal">ปิด</button></div>
+  ${tradeCard(x)}
+  <div class="card" style="gap:4px">${CHK.map(([t], i) => `<div class="row" style="align-items:flex-start"><span class="${x.c[i] ? 'ok' : 'bad'}" style="font-weight:700;width:16px">${x.c[i] ? '✓' : '✕'}</span><span style="font-size:13px">${i + 1}. ${esc(t)}</span></div>`).join('')}
+  ${x.overrides && x.overrides.length ? `<div class="lab">แก้ทับระบบ: ${esc(x.overrides.join(', '))}</div>` : ''}${x.ruleBreakReason ? `<div class="warn r">เหตุผลที่ฝืนกฎ: ${esc(x.ruleBreakReason)}</div>` : ''}</div>
+  <div class="g3"><div class="tile"><span class="lab">Model</span><b style="font-size:13px">${esc(MODELS[x.model] || x.model)}</b></div><div class="tile"><span class="lab">RR / RR@B</span><b style="font-size:13px">1:${fx(x.rr, 2)} / ${x.rrB ? '1:' + fx(x.rrB, 2) : '–'}</b></div><div class="tile"><span class="lab">Risk</span><b style="font-size:13px">${money(x.riskUsd)}</b></div></div>
+  ${x.status === 'CLOSED' ? `<div class="g3"><div class="tile"><span class="lab">ออก</span><b style="font-size:13px">${fx(x.exit, d)} · ${esc(x.exitType)}</b></div><div class="tile"><span class="lab">Net</span><b style="font-size:13px" class="${x.pnlNet >= 0 ? 'ok' : 'bad'}">${money(x.pnlNet)}</b></div><div class="tile"><span class="lab">แผน</span><b style="font-size:13px">${esc(x.plan || '–')}/5</b></div></div>` : ''}
+  ${[['Liquidity', x.sweep], ['POI', x.poi], ['อารมณ์', x.emotion], ['ความผิดพลาด', x.mistakes]].filter(([, v]) => v && v.length).map(([k, v]) => `<div><span class="lab">${k}</span><div class="tgs">${v.map(t => `<span class="chip">${esc(t)}</span>`).join('')}</div></div>`).join('')}
+  ${[['Context', x.context], ['Trigger', x.trigger], ['ทำไมชนะ/แพ้', x.why], ['ต้องแก้', x.fix]].filter(([, v]) => v).map(([k, v]) => `<div><span class="lab">${k}</span><div style="white-space:pre-wrap">${esc(v)}</div></div>`).join('')}
+  ${shots.length ? `<div class="g2">${shots.map(([k, v]) => v.startsWith('data:') ? `<figure style="margin:0"><img src="${esc(v)}" alt="กราฟ ${esc(k)}" style="width:100%;border-radius:10px;display:block"><figcaption class="lab">${esc(k.toUpperCase())}</figcaption></figure>` : `<a class="btn" href="${esc(v)}" target="_blank" rel="noopener">เปิดรูป ${esc(k.toUpperCase())} ใน Drive</a>`).join('')}</div>` : ''}
+  <div class="lab">${x.synced ? 'ซิงก์กับ Google Sheet แล้ว' : 'ยังไม่ได้ซิงก์กับ Google Sheet'}</div>`;
+}
+function pendingSheet(x) {
+  return `<div class="row between"><span style="font-size:18px;font-weight:700">Limit รอ fill</span><button class="btn" style="min-height:40px" data-act="close-modal">ปิด</button></div>
+  ${tradeCard(x)}
+  <label class="fld"><span>ราคาที่ได้ fill จริง</span><input id="fillp" inputmode="decimal" value="${esc(x.entry)}"></label>
+  <button class="btn pri" data-act="fill" data-id="${esc(x.id)}">ได้ fill แล้ว → เปิดไม้</button>
+  <span class="lab">หรือยกเลิก เพราะ</span>
+  <div class="g2"><button class="btn" data-act="cancel-pend" data-id="${esc(x.id)}" data-why="ราคาไม่ถึง B">ราคาไม่ถึง B</button><button class="btn" data-act="cancel-pend" data-id="${esc(x.id)}" data-why="ราคาวิ่งหนี / ไม่ย่อ">ราคาวิ่งหนี</button>
+  <button class="btn" data-act="cancel-pend" data-id="${esc(x.id)}" data-why="Setup เสีย / ยกเลิกเอง">Setup เสีย</button><button class="btn" data-act="cancel-pend" data-id="${esc(x.id)}" data-why="ใกล้ข่าว / หมดเวลา">ใกล้ข่าว/หมดเวลา</button></div>
+  <span class="note">การยกเลิกเพราะราคาวิ่งหนีถือว่า "ถูกกฎ" (ไม่ไล่ราคา) ระบบใช้สถิตินี้คำนวณ % ที่ limit ที่ B ได้ fill</span>`;
+}
+function vSettings() {
+  const f = (id, label, val, extra = '') => `<label class="fld"><span>${label}</span><input id="s-${id}" inputmode="decimal" value="${esc(val)}"${extra}></label>`;
+  return `<div class="row between"><span style="font-size:20px;font-weight:700">ตั้งค่า</span></div>
+  <div class="card"><span class="h">บัญชี (XM · MT5)</span>
+    <div class="g2">${f('balance', 'ทุนตั้งต้น (USD)', S.balance)}${f('goal', 'เป้าพอร์ต (USD)', S.goal)}</div>
+    <span class="lab">โหมดบันทึก</span>${seg('mode', [['LIVE', 'LIVE'], ['DEMO', 'DEMO']], S.mode)}
+    <div class="g2">${f('csXAU', 'Contract size XAUUSD', S.contract.XAUUSD)}${f('csGBP', 'Contract size GBPUSD', S.contract.GBPUSD)}</div>
+    <span class="note">ตรวจใน MT5: คลิกขวาที่ Symbol › Specification › Contract size ค่าที่ใช้ขึ้นกับประเภทบัญชี XM (Standard / Micro / Ultra Low) ถ้าค่าผิด lot จะคลาดเคลื่อนเป็นสิบหรือร้อยเท่า</span>
+  </div>
+  <div class="card"><span class="h">กฎ Risk</span>
+    <div class="g3">${f('riskAplus', 'A+ (%)', S.riskAplus)}${f('riskA', 'A (%)', S.riskA)}${f('riskMax', 'A+ ปลดล็อก (%)', S.riskMax)}
+    ${f('dailyStopPct', 'หยุดวัน (%)', S.dailyStopPct)}${f('dailyStopLosses', 'หยุดวัน (ไม้)', S.dailyStopLosses)}${f('weeklyStopPct', 'หยุดสัปดาห์ (%)', S.weeklyStopPct)}
+    ${f('ddReset', 'DD กลับ 1% (%)', S.ddReset)}${f('cooldown', 'พักหลังแพ้ (นาที)', S.cooldown)}${f('minRR', 'RR ขั้นต่ำ', S.minRR)}</div>
+  </div>
+  <div class="card"><span class="h">เชื่อม Google Sheet</span>
+    <label class="fld"><span>Apps Script Web App URL</span><input id="s-apiUrl" value="${esc(S.apiUrl)}" placeholder="https://script.google.com/macros/s/.../exec" inputmode="url"></label>
+    <label class="fld"><span>API Token</span><input id="s-token" value="${esc(S.token)}" type="password" autocomplete="off"></label>
+    <div class="g2"><button class="btn" data-act="test-api">ทดสอบการเชื่อมต่อ</button><button class="btn" data-act="sync-all">ส่งขึ้น Sheet (${T.filter(x => !x.synced).length + CF.filter(c => !c.synced).length})</button></div>
+    <button class="btn" data-act="pull">ดึงข้อมูลจาก Sheet ลงเครื่องนี้</button>
+    <span class="note">เมื่อเชื่อมแล้ว แอปจะดึงข้อมูลจาก Sheet ให้เองทุกครั้งที่เปิด ใช้ได้หลายเครื่อง และข้อมูลไม่หายแม้ล้างเบราว์เซอร์</span>
+    <span class="note">หน้าตัวอย่างนี้เชื่อมต่อออกภายนอกไม่ได้ จะใช้งานได้จริงเมื่ออัปโหลดขึ้น GitHub Pages ระหว่างนี้ข้อมูลเก็บไว้ในเบราว์เซอร์เครื่องนี้</span>
+  </div>
+  <button class="btn pri" data-act="save-settings">บันทึกการตั้งค่า</button>
+  <div class="card"><span class="h">ฝาก / ถอนเงิน</span>
+    ${seg('cft', [['DEP', 'ฝากเงิน'], ['WD', 'ถอนเงิน']], cfType)}
+    <div class="g2"><label class="fld"><span>จำนวน (USD)</span><input id="cf-amt" inputmode="decimal" placeholder="500"></label><label class="fld"><span>หมายเหตุ</span><input id="cf-note" placeholder="เติมทุน / ถอนกำไร" style="font-family:inherit"></label></div>
+    <button class="btn" data-act="add-cash">บันทึกรายการ</button>
+    ${CF.length ? `<table><thead><tr><th>วันที่</th><th>รายการ</th><th>จำนวน</th><th></th></tr></thead><tbody>${[...CF].sort((a, b) => a.date < b.date ? 1 : -1).slice(0, 12).map(c => `<tr><td>${fmtDT(c.date)}</td><td>${c.type === 'DEP' ? 'ฝาก' : 'ถอน'}${c.note ? ' · ' + esc(c.note) : ''}</td><td class="mono ${c.type === 'DEP' ? 'ok' : 'bad'}">${c.type === 'DEP' ? '+' : '−'}${money(c.amount)}</td><td><button class="tg" data-act="del-cash" data-id="${esc(c.id)}" aria-label="ลบรายการ">ลบ</button></td></tr>`).join('')}</tbody></table>` : '<div class="note">ยังไม่มีรายการ · ยอดทุนปัจจุบัน = ทุนตั้งต้น + กำไร/ขาดทุน + ฝาก − ถอน</div>'}
+  </div>
+  <div class="card"><span class="h">ข้อมูล</span>
+    <div class="g2"><button class="btn" data-act="copy-json">คัดลอกข้อมูล (JSON)</button><button class="btn" data-act="load-sample">โหลดข้อมูลตัวอย่าง</button></div>
+    <button class="btn dng" data-act="wipe">ล้างข้อมูลทั้งหมด</button></div>`;
+}
+
+// ---------- render ----------
+function render() {
+  const fn = { home: vHome, new: vNew, close: vClose, stats: vStats, history: vHistory, settings: vSettings }[view] || vHome;
+  $('#app').innerHTML = fn();
+  document.querySelectorAll('#nav [data-go]').forEach(b => b.classList.toggle('on', b.dataset.go === view));
+  if (view === 'new') updateCalc();
+  if (view === 'close') closeCalc();
+  if (view === 'stats') drawEq();
+}
+const go = v => { view = v; if (v === 'new' && !draft) draft = newDraft(); render(); window.scrollTo(0, 0); };
+
+// ---------- sync (Apps Script) ----------
+async function api(body) {
+  if (!S.apiUrl) throw new Error('no-url');
+  const r = await fetch(S.apiUrl, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ token: S.token, ...body }) });
+  const j = await r.json(); if (!j.ok) throw new Error(j.error || 'error'); return j;
+}
+async function syncTrade(x) {
+  if (!S.apiUrl) return false;
+  try {
+    x.shotUrls = x.shotUrls || {};
+    for (const [k, v] of Object.entries(x.shots || {})) {
+      if (v && v.startsWith('data:') && !x.shotUrls[k]) { const j = await api({ action: 'image', name: x.id + '_' + k + '.jpg', data: v.split(',')[1] }); x.shotUrls[k] = j.url; }
+    }
+    const { shots, ...row } = x; await api({ action: 'upsert', trade: row });
+    x.synced = true; save(); return true;
+  } catch (e) { x.synced = false; save(); return false; }
+}
+
+async function syncCash(c) {
+  if (!S.apiUrl) return false;
+  try { const { synced, ...row } = c; await api({ action: 'upsertCash', cash: row }); c.synced = true; save(); return true; } catch (e) { c.synced = false; save(); return false; }
+}
+const ARR = ['c', 'overrides', 'sweep', 'poi', 'emotion', 'mistakes'], TXT = ['id', 'mode', 'status', 'symbol', 'dir', 'model', 'orderType', 'openTime', 'closeTime', 'fillTime', 'session', 'weekday', 'grade', 'ruleBreakReason', 'cancelReason', 'exitType', 'quadrant', 'plan', 'context', 'trigger', 'why', 'fix', 'updatedAt'];
+function fromRow(r) {
+  const x = { synced: true, shots: {}, shotUrls: {} };
+  for (const [k, v] of Object.entries(r)) {
+    if (k.startsWith('shot_')) { if (v) x.shotUrls[k.slice(5)] = String(v); continue; }
+    if (ARR.includes(k)) { const a = v === '' || v === null ? [] : String(v).split(',').map(t => t.trim()).filter(Boolean); x[k] = k === 'c' ? a.map(t => t === 'true') : a; continue; }
+    if (TXT.includes(k)) { x[k] = v === null ? '' : String(v); continue; }
+    if (k === 'ruleBreak' || k === 'inKillzone') { x[k] = v === true || v === 'true'; continue; }
+    x[k] = v === '' || v === null ? null : (typeof v === 'number' ? v : num(v));
+  }
+  while (x.c.length < 5) x.c.push(false);
+  return x;
+}
+async function pull() {
+  if (!S.apiUrl || pulling) return null; pulling = true;
+  try {
+    const j = await api({ action: 'list' }); let n = 0;
+    const loc = new Map(T.filter(x => !x.sample).map(x => [x.id, x]));
+    for (const r of j.trades || []) { const x = fromRow(r), l = loc.get(x.id);
+      if (!l || (l.synced && (x.updatedAt || '') >= (l.updatedAt || ''))) { if (l) x.shots = l.shots || {}; loc.set(x.id, x); n++; } }
+    T = [...loc.values()];
+    const cm = new Map(CF.map(c => [c.id, c]));
+    for (const c of j.cash || []) { const l = cm.get(c.id); if (!l || l.synced) { cm.set(c.id, { ...c, amount: +c.amount, synced: true }); n++; } }
+    CF = [...cm.values()]; save(); return n;
+  } catch (e) { return null; } finally { pulling = false; }
+}
+
+// ---------- confirm rule-break ----------
+function confirmBreak(C, cb) {
+  const why = [];
+  if (C.g === 'NO') why.push('เกรด "ไม่เข้า" — ' + (!C.c[0] ? 'ข้อ 1 ' : '') + (!C.c[2] ? 'ข้อ 3 ' : '') + (!C.c[4] ? 'ข้อ 5 ' : '') + (C.c[0] && C.c[2] && C.c[4] ? 'ขาดข้อ 2 และ 4' : 'ไม่ผ่าน (บังคับ)'));
+  C.E.stops.forEach(s => why.push('หยุดเทรด: ' + s));
+  if (C.E.cool > 0) why.push('ยังอยู่ในช่วงพักหลังแพ้');
+  if (!why.length) return cb('');
+  openModal(`<span style="font-size:20px;font-weight:700" class="bad">ไม้นี้ผิดกฎ</span>${why.map(w => `<div class="warn r">${esc(w)}</div>`).join('')}
+  <div>"ไม่ได้เตรียมไว้ = ไม่ใช่ไม้ของเรา" ถ้ายังจะเข้า ไม้นี้จะถูกบันทึกเป็น <b>ผิดกฎ</b> และนับลด compliance</div>
+  <span class="lab">พิมพ์เหตุผลที่ยังจะเข้า (บังคับ)</span><textarea id="rb-why"></textarea>
+  <button class="btn" data-act="close-modal">ไม่เข้าแล้ว (แนะนำ)</button><button class="btn dng" id="rb-go">ยืนยันเข้าไม้แบบผิดกฎ</button>`);
+  $('#rb-go').onclick = () => { const r = $('#rb-why').value.trim(); if (r.length < 5) { toast('พิมพ์เหตุผลอย่างน้อย 5 ตัวอักษร'); return; } closeModal(); cb(r); };
+}
+
+// ---------- events ----------
+document.addEventListener('click', async e => {
+  const el = e.target.closest('[data-go],[data-seg],[data-tg],[data-act],[data-open],[data-day]'); if (!el) { if (e.target.id === 'modal') closeModal(); return; }
+  if (el.dataset.go) return go(el.dataset.go);
+  if (el.dataset.day) { const k = el.dataset.day, a = T.filter(x => x.status === 'CLOSED' && bk(new Date(x.closeTime)).key === k);
+    const t = bk(new Date(k + 'T05:00:00Z'));
+    return openModal(`<div class="row between"><span style="font-size:18px;font-weight:700">${DOW[t.dow]} ${t.d} ${MON[t.mo]}</span><button class="btn" style="min-height:40px" data-act="close-modal">ปิด</button></div>
+    <div class="g3"><div class="tile"><span class="lab">รวม R</span><b class="${sum(a, 'r') >= 0 ? 'ok' : 'bad'}">${sgn(sum(a, 'r'), 2, 'R')}</b></div><div class="tile"><span class="lab">Net</span><b>${money(sum(a, 'pnlNet'))}</b></div><div class="tile"><span class="lab">ไม้</span><b>${a.length}</b></div></div>${a.map(tradeCard).join('')}`); }
+  if (el.dataset.open) { const x = T.find(t => t.id === el.dataset.open); if (!x) return; closeModal();
+    if (x.status === 'OPEN') { closeD = { id: x.id, exit: '', slFinal: String(x.sl), exitType: 'TP', pnl: '', pnlEdited: false, comm: '', swap: '', mistakes: [...(x.mistakes || [])], plan: '5', why: '', fix: '', shots: { ...x.shots } }; return go('close'); }
+    if (x.status === 'PENDING') return openModal(pendingSheet(x));
+    return openModal(detail(x)); }
+  if (el.dataset.seg) {
+    const g = el.dataset.seg, v = el.dataset.v;
+    if (g === 'sym' || g === 'dir') { draft[g] = v; return render(); }
+    if (g === 'otype') { draft.orderType = v; if (v === 'LIMIT' && !draft.pointB) draft.pointB = draft.entry; return render(); }
+    if (g === 'cft') { cfType = v; el.parentNode.querySelectorAll('button').forEach(b => b.classList.toggle('on', b === el)); return; }
+    if (g === 'qsym') { window._quick.sym = v; window._quick.dist = v === 'GBPUSD' ? '15' : '3.5'; return render(); }
+    if (g === 'exitType' || g === 'plan') { closeD[g] = v; el.parentNode.querySelectorAll('button').forEach(b => b.classList.toggle('on', b === el)); return; }
+    if (g === 'period') { statPeriod = v; return render(); }
+    if (g === 'hist') { histFilter = v; return render(); }
+    if (g === 'mode') { S.mode = v; el.parentNode.querySelectorAll('button').forEach(b => b.classList.toggle('on', b === el)); return; }
+  }
+  if (el.dataset.tg) {
+    const g = el.dataset.tg, v = el.dataset.v, arr = g === 'mist' ? closeD.mistakes : draft[g];
+    const i = arr.indexOf(v); i >= 0 ? arr.splice(i, 1) : arr.push(v); el.classList.toggle('on', i < 0); return;
+  }
+  const act = el.dataset.act;
+  if (act === 'close-modal') return closeModal();
+  if (act === 'fill' || act === 'cancel-pend') {
+    const x = T.find(t => t.id === el.dataset.id); if (!x) return;
+    if (act === 'fill') { const f = num($('#fillp').value); if (f !== null) x.entry = f; const cs = S.contract[x.symbol], dist = Math.abs(x.entry - x.sl);
+      x.riskUsd = x.lot * dist * cs; x.riskPct = x.balanceBefore ? x.riskUsd / x.balanceBefore * 100 : 0; x.rr = dist ? Math.abs(x.tp - x.entry) / dist : x.rr;
+      Object.assign(x, { status: 'OPEN', fillTime: nowISO(), updatedAt: nowISO(), synced: false }); toast('Fill แล้ว · ' + x.id + ' เปิดอยู่'); }
+    else { Object.assign(x, { status: 'CANCELLED', cancelReason: el.dataset.why, closeTime: nowISO(), updatedAt: nowISO(), synced: false }); toast('ยกเลิก Limit แล้ว'); }
+    save(); syncTrade(x); closeModal(); return render();
+  }
+  if (act === 'cal-prev' || act === 'cal-next') { cal.m += act === 'cal-next' ? 1 : -1; if (cal.m < 0) { cal.m = 11; cal.y--; } if (cal.m > 11) { cal.m = 0; cal.y++; } return render(); }
+  if (act === 'reset-draft') { draft = newDraft(); return render(); }
+  if (act === 'open-trade' || act === 'skip-trade') {
+    const C = calc(draft);
+    if (!C.valid) { toast('ใส่ Entry / SL / TP ให้ถูกทิศก่อน'); return; }
+    if (act === 'skip-trade') { T.push(buildTrade('SKIPPED')); save(); draft = null; toast('บันทึก Skipped แล้ว — ไม่ไล่ราคา = ถูกกฎ'); return go('history'); }
+    if (!(num(draft.lot) > 0)) { toast('Lot ต้องมากกว่า 0'); return; }
+    return confirmBreak(C, reason => { const lim = draft.orderType === 'LIMIT'; const x = buildTrade(lim ? 'PENDING' : 'OPEN', reason); T.push(x); save(); draft = null; syncTrade(x); toast((lim ? 'ตั้ง Limit ' : 'เปิดไม้ ') + x.id + ' แล้ว'); go('home'); });
+  }
+  if (act === 'save-close') {
+    const x = T.find(t => t.id === closeD.id), C = closeD, ex = num(C.exit);
+    if (ex === null) { toast('ใส่ราคาออกก่อน'); return; }
+    const net = (num(C.pnl) || 0) + (num(C.comm) || 0) + (num(C.swap) || 0), sign = x.dir === 'SELL' ? -1 : 1;
+    Object.assign(x, { status: 'CLOSED', closeTime: new Date().toISOString(), exit: ex, exitType: C.exitType, slFinal: num(C.slFinal) ?? x.sl, pnlGross: num(C.pnl) || 0, commission: num(C.comm) || 0, swap: num(C.swap) || 0,
+      pnlNet: net, r: x.riskUsd ? net / x.riskUsd : 0, points: (ex - x.entry) * sign / (SYM[x.symbol] || SYM.XAUUSD).pt, holdMin: Math.round((Date.now() - new Date(x.openTime)) / 6e4),
+      mistakes: C.mistakes, plan: C.plan, why: C.why, fix: C.fix, shots: C.shots, synced: false, updatedAt: nowISO() });
+    x.quadrant = QUAD[quadOf(x)]; save(); syncTrade(x); toast('ปิดไม้แล้ว · ' + sgn(x.r, 2, 'R') + ' · ' + x.quadrant); closeD = null; return go('home');
+  }
+  if (act === 'del-trade') { openModal(`<span style="font-size:18px;font-weight:700">ลบไม้ ${esc(el.dataset.id)}?</span><div class="note">ถ้าเชื่อม Sheet แล้ว แถวใน Sheet จะถูกลบด้วย</div><button class="btn" data-act="close-modal">ยกเลิก</button><button class="btn dng" data-act="del-yes" data-id="${esc(el.dataset.id)}">ลบ</button>`); return; }
+  if (act === 'del-yes') { const dx = T.find(t => t.id === el.dataset.id); if (dx && dx.synced && S.apiUrl) api({ action: 'delete', id: dx.id }).catch(() => {}); T = T.filter(t => t.id !== el.dataset.id); save(); closeModal(); closeD = null; toast('ลบแล้ว'); return go('home'); }
+  if (act === 'save-settings') {
+    const g = id => num($('#s-' + id).value);
+    ['balance', 'goal', 'riskAplus', 'riskA', 'riskMax', 'dailyStopPct', 'dailyStopLosses', 'weeklyStopPct', 'ddReset', 'cooldown', 'minRR'].forEach(k => { const v = g(k); if (v !== null) S[k] = v; });
+    const a = g('csXAU'), b = g('csGBP'); if (a) S.contract.XAUUSD = a; if (b) S.contract.GBPUSD = b;
+    S.apiUrl = $('#s-apiUrl').value.trim(); S.token = $('#s-token').value.trim(); save(); toast('บันทึกการตั้งค่าแล้ว'); return render();
+  }
+  if (act === 'add-cash') { const a = num($('#cf-amt').value); if (!(a > 0)) { toast('ใส่จำนวนเงินมากกว่า 0'); return; }
+    const c = { id: 'C' + Date.now(), date: nowISO(), type: cfType, amount: a, note: $('#cf-note').value.trim(), updatedAt: nowISO(), synced: false }; CF.push(c); save(); syncCash(c); toast((cfType === 'DEP' ? 'บันทึกฝาก ' : 'บันทึกถอน ') + money(a)); return render(); }
+  if (act === 'del-cash') { const c = CF.find(x => x.id === el.dataset.id); CF = CF.filter(x => x.id !== el.dataset.id); save(); if (c && c.synced && S.apiUrl) api({ action: 'deleteCash', id: c.id }).catch(() => {}); toast('ลบรายการแล้ว'); return render(); }
+  if (act === 'pull') { if (!S.apiUrl) { toast('ยังไม่ได้ใส่ URL'); return; } const n = await pull(); toast(n === null ? 'ดึงข้อมูลไม่ได้ — เช็ก URL/Token' : 'ดึงข้อมูลแล้ว ' + n + ' รายการ'); return render(); }
+  if (act === 'test-api') { try { await api({ action: 'ping' }); toast('เชื่อมต่อ Google Sheet สำเร็จ'); } catch (err) { toast(err.message === 'no-url' ? 'ยังไม่ได้ใส่ URL' : 'เชื่อมต่อไม่ได้ — เช็ก URL/Token'); } return; }
+  if (act === 'sync-all') { if (!S.apiUrl) { toast('ยังไม่ได้ใส่ URL'); return; } let n = 0; for (const x of T.filter(t => !t.synced && !t.sample)) if (await syncTrade(x)) n++; for (const c of CF.filter(c => !c.synced)) if (await syncCash(c)) n++; toast('ส่งขึ้น Sheet สำเร็จ ' + n + ' รายการ'); return render(); }
+  if (act === 'copy-json') { try { await navigator.clipboard.writeText(JSON.stringify({ settings: { ...S, token: '' }, trades: T.map(({ shots, ...r }) => r) }, null, 1)); toast('คัดลอกแล้ว'); } catch (err) { toast('คัดลอกไม่ได้ในเบราว์เซอร์นี้'); } return; }
+  if (act === 'load-sample') { T = T.filter(x => !x.sample).concat(sample()); save(); toast('โหลดข้อมูลตัวอย่างแล้ว'); return go('home'); }
+  if (act === 'wipe') { openModal(`<span style="font-size:18px;font-weight:700">ล้างข้อมูลทั้งหมดในเครื่องนี้?</span><div class="note">ข้อมูลใน Google Sheet ไม่ถูกลบ ดึงกลับมาได้ที่ "ดึงข้อมูลจาก Sheet"</div><button class="btn" data-act="close-modal">ยกเลิก</button><button class="btn dng" data-act="wipe-yes">ล้างข้อมูล</button>`); return; }
+  if (act === 'wipe-yes') { T = []; CF = []; save(); closeModal(); toast('ล้างข้อมูลแล้ว'); return go('home'); }
+});
+document.addEventListener('input', e => {
+  const id = e.target.id || '';
+  if (id === 'qdist') { window._quick.dist = e.target.value; const E = engine(), q = window._quick, dd = num(q.dist) ? (q.sym === 'GBPUSD' ? num(q.dist) * 0.0001 : num(q.dist)) : 0; $('#qout').innerHTML = quickOut(lotFor(q.sym, dd, E.allow('A+'), E.eq), lotFor(q.sym, dd, E.allow('A'), E.eq), E); return; }
+  if (id.startsWith('f-') && draft) { const k = id.slice(2); draft[k] = e.target.value; if (k === 'lot') draft.lotEdited = e.target.value !== ''; if (['entry', 'pointB', 'sl', 'tp', 'lot'].includes(k)) updateCalc(); return; }
+  if (id.startsWith('c-') && closeD) { const k = id.slice(2); closeD[k] = e.target.value; if (k === 'pnl') closeD.pnlEdited = e.target.value !== ''; closeCalc(); return; }
+});
+document.addEventListener('change', async e => {
+  const t = e.target;
+  if (t.dataset.c !== undefined && draft) { draft.c[+t.dataset.c] = t.checked; updateCalc(); return; }
+  if (t.id === 'f-model' && draft) { draft.model = t.value; return; }
+  if (t.dataset.shot && t.files && t.files[0]) {
+    try { const url = await resize(t.files[0]); (t.dataset.scope === 'draft' ? draft : closeD).shots[t.dataset.shot] = url;
+      const lab = t.closest('.shot'); const old = lab.querySelector('img,svg'); const im = new Image(); im.src = url; im.alt = 'กราฟ'; old.replaceWith(im); toast('แนบรูปแล้ว'); }
+    catch (err) { toast('อ่านรูปไม่ได้'); }
+  }
+});
+setInterval(() => { if (view !== 'home') return; const c = $('#clock'), ts = $('#tstrip'); if (c) { const t = bk(); c.textContent = DOW[t.dow] + ' ' + t.d + ' ' + MON[t.mo] + ' · ' + hm(t.h * 60 + t.mi); } if (ts) ts.outerHTML = timeStrip(); }, 30000);
+let rz; new ResizeObserver(() => { clearTimeout(rz); rz = setTimeout(drawEq, 80); }).observe(document.body);
+
+// ---------- sample data ----------
+function sample() {
+  const out = [], base = S.balance; let bal = base; const now = new Date();
+  const rows = [[9, 'XAUUSD', 'SELL', 'A+', 3.1, [], 14, 'London'], [8, 'GBPUSD', 'BUY', 'A', -1, [], 15, 'London'], [7, 'XAUUSD', 'BUY', 'A+', 2.4, [], 20, 'NY'], [6, 'XAUUSD', 'SELL', 'NO', 1.2, ['FOMO/ไล่ราคา'], 21, 'NY'],
+    [4, 'XAUUSD', 'SELL', 'A+', -1, [], 19, 'NY'], [3, 'GBPUSD', 'SELL', 'A', 1.8, [], 14, 'London'], [2, 'XAUUSD', 'BUY', 'A+', -1.6, ['ขยับ SL ออก'], 20, 'NY'], [1, 'XAUUSD', 'SELL', 'A', 2, [], 21, 'NY']];
+  let k = 0;
+  for (const [ago, sym, dir, g, r, mis, h, ses] of rows) {
+    const day = new Date(now); let n = ago; while (n > 0) { day.setUTCDate(day.getUTCDate() - 1); const w = bk(day).dow; if (w > 0 && w < 6) n--; }
+    const t = new Date(Date.UTC(day.getUTCFullYear(), day.getUTCMonth(), day.getUTCDate(), h - 7, 10));
+    const pct = g === 'A+' ? 2 : 1, riskUsd = bal * pct / 100, isX = sym === 'XAUUSD', dist = isX ? 3.5 : 0.0015, cs = isX ? 100 : 100000;
+    const lot = Math.floor(riskUsd / (dist * cs) * 100) / 100, real = lot * dist * cs, sign = dir === 'SELL' ? -1 : 1, entry = isX ? 3570 + k * 3.7 : 1.3120 + k * 0.0011;
+    const pnl = r * real, exit = entry + sign * r * dist;
+    const x = { id: 'S' + (k + 1), sample: true, mode: 'LIVE', status: 'CLOSED', symbol: sym, dir, model: 'A', openTime: t.toISOString(), closeTime: new Date(+t + 95 * 6e4).toISOString(), session: ses, weekday: DOW[bk(t).dow], inKillzone: true,
+      c: g === 'NO' ? [true, true, false, true, true] : [true, true, true, g === 'A+', true], overrides: [], grade: g, ruleBreak: g === 'NO', ruleBreakReason: g === 'NO' ? 'กลัวตกรถ' : '', entry, pointB: null, sl: entry - sign * dist, slFinal: mis.includes('ขยับ SL ออก') ? entry - sign * dist * 1.6 : entry - sign * dist,
+      tp: entry + sign * dist * 3, lot, riskPct: pct, riskUsd: real, allowedPct: pct, balanceBefore: bal, rr: 3, rrB: null, sweep: ['EQH'], poi: ['OB'], emotion: [g === 'NO' ? 'FOMO' : 'Calm'], context: '', trigger: '', shots: {},
+      mistakes: mis, exit, exitType: r > 0 ? 'TP' : 'SL', pnlGross: pnl, commission: 0, swap: 0, pnlNet: pnl, r, points: sign * (exit - entry) / SYM[sym].pt, plan: g === 'NO' ? '2' : '5', why: '', fix: '', synced: false };
+    x.quadrant = QUAD[quadOf(x)]; bal += pnl; out.push(x); k++;
+  }
+  return out;
+}
+
+// ---------- boot ----------
+(async () => {
+  await idbOpen();
+  const s = await kget('settings'), t = await kget('trades'), cf = await kget('cash');
+  CF = Array.isArray(cf) ? cf : [];
+  if (s) S = { ...JSON.parse(JSON.stringify(DEF)), ...s, contract: { ...DEF.contract, ...(s.contract || {}) } };
+  T = Array.isArray(t) ? t : sample();
+  save(); render();
+  if (S.apiUrl) { const n = await pull(); if (n !== null) { render(); if (n) toast('อัปเดตจาก Google Sheet ' + n + ' รายการ'); } }
+  try { if ('serviceWorker' in navigator && location.protocol === 'https:' && !location.hostname.endsWith('claude.ai') && !location.hostname.includes('claudeusercontent')) navigator.serviceWorker.register('sw.js').catch(() => {}); } catch (e) {}
+})();
+}
+</script>
+</body>
+</html>
