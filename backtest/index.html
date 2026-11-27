@@ -62,8 +62,8 @@ select{background:var(--card2);border-radius:12px;padding:10px;min-height:44px}s
 .grade{width:72px;height:72px;border-radius:16px;display:grid;place-items:center;font-size:30px;font-weight:700;flex:none}
 .gA\+{background:var(--grn);color:#06140e}.gA{background:var(--blu);color:#07142a}.gNO{background:#3A1A1E;color:var(--red);font-size:16px;text-align:center;line-height:1.1}
 .warn{font-size:13px;background:#2b2410;color:#F2D27A;border-radius:10px;padding:8px 10px}.warn.r{background:#3A1A1E;color:#FF9AA2}.warn.g{background:#12301F;color:#8FE0B8}
-.shots{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-.shot{aspect-ratio:16/10;border:1px dashed #3a4660;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:12px;color:var(--mut);position:relative;overflow:hidden;cursor:pointer;background:var(--card2)}
+.shots{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.shot{aspect-ratio:4/3;border:1px dashed #3a4660;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:12px;color:var(--mut);position:relative;overflow:hidden;cursor:pointer;background:var(--card2)}
 .shot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .shot input{position:absolute;inset:0;opacity:0;cursor:pointer}
 .shot em{position:absolute;left:4px;bottom:4px;font-style:normal;font-size:10px;background:rgba(0,0,0,.65);color:#fff;padding:1px 5px;border-radius:5px}
@@ -127,6 +127,8 @@ const CHK = [
 ];
 const DOW = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสฯ','ศุกร์','เสาร์'];
 const MON = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+const SHOTS = [['d1', 'D1'], ['h4', 'H4'], ['h1', 'H1'], ['m15', 'M15'], ['m5', 'M5']];
+const shotLabel = k => (SHOTS.find(([x]) => x === k) || [k, k.toUpperCase()])[1];
 const MONF = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
 
 // ---------- storage ----------
@@ -287,7 +289,7 @@ function vNew() {
     <span class="lab">ความผิดพลาดในการตัดสินเคสนี้</span>${tags(MIST, D.mistakes, 'mistakes')}
     <span class="lab">หมายเหตุ</span><textarea id="f-notes">${esc(D.notes)}</textarea>
   </details>
-  <div class="card"><span class="h">รูปกราฟ</span><div class="shots">${shotSlot('before', 'ก่อนเข้า', D.shots.before)}${shotSlot('after', 'ผลลัพธ์', D.shots.after)}</div></div>
+  <div class="card"><div class="row between"><span class="h">รูปกราฟ 5 TF</span><span class="lab">${SHOTS.filter(([k]) => D.shots[k]).length}/5</span></div><div class="shots">${SHOTS.map(([k, l]) => shotSlot(k, l, D.shots[k])).join('')}</div><span class="note">ระบบย่อรูปให้อัตโนมัติ และส่งขึ้น Google Drive เมื่อเชื่อมต่อแล้ว</span></div>
   <button class="btn pri" data-act="save-case">${editId ? 'บันทึกการแก้ไข' : 'บันทึกเคส'}</button>
   ${editId ? `<button class="btn dng" data-act="del-case" data-id="${esc(editId)}">ลบเคสนี้</button>` : ''}`;
 }
@@ -427,7 +429,7 @@ function vHistory() {
   ${L.length ? L.map(caseCard).join('') : '<div class="empty card">ยังไม่มีเคส</div>'}`;
 }
 function detail(x) {
-  const d = symOf(x.symbol).dec, shots = Object.entries({ ...(x.shotUrls || {}), ...(x.shots || {}) }).filter(([, v]) => v);
+  const d = symOf(x.symbol).dec, all = { ...(x.shotUrls || {}), ...(x.shots || {}) }, shots = SHOTS.map(([k]) => [k, all[k]]).concat(Object.entries(all).filter(([k]) => !SHOTS.some(([s]) => s === k))).filter(([, v]) => v);
   return `<div class="row between"><span style="font-size:18px;font-weight:700">เคส #${x.n}</span><div class="row"><button class="btn" style="min-height:40px" data-act="edit-case" data-id="${esc(x.id)}">แก้ไข</button><button class="btn" style="min-height:40px" data-act="close-modal">ปิด</button></div></div>
   ${caseCard(x)}
   <div class="card" style="gap:4px">${CHK.map(([t], i) => `<div class="row" style="align-items:flex-start"><span class="${x.c[i] ? 'ok' : 'bad'}" style="font-weight:700;width:16px">${x.c[i] ? '✓' : '✕'}</span><span style="font-size:13px">${i + 1}. ${esc(t)}</span></div>`).join('')}
@@ -436,7 +438,7 @@ function detail(x) {
   ${x.taken ? `<div class="g3"><div class="tile"><span class="lab">ออก</span><b style="font-size:13px">${esc(x.exitType)}</b></div><div class="tile"><span class="lab">ผล</span><b style="font-size:13px" class="${x.r >= 0 ? 'ok' : 'bad'}">${sgn(x.r, 2, 'R')}</b></div><div class="tile"><span class="lab">ถ้า limit ที่ B</span><b style="font-size:13px">${x.rB !== null && x.rB !== undefined ? sgn(x.rB, 2, 'R') : '–'}</b></div></div>` : ''}
   ${[['Liquidity', x.sweep], ['POI', x.poi], ['ความผิดพลาด', x.mistakes]].filter(([, v]) => v && v.length).map(([k, v]) => `<div><span class="lab">${k}</span><div class="tgs">${v.map(t => `<span class="chip">${esc(t)}</span>`).join('')}</div></div>`).join('')}
   ${x.notes ? `<div><span class="lab">หมายเหตุ</span><div style="white-space:pre-wrap">${esc(x.notes)}</div></div>` : ''}
-  ${shots.length ? `<div class="g2">${shots.map(([k, v]) => v.startsWith('data:') ? `<figure style="margin:0"><img src="${esc(v)}" alt="กราฟ ${esc(k)}" style="width:100%;border-radius:10px;display:block"><figcaption class="lab">${k === 'before' ? 'ก่อนเข้า' : 'ผลลัพธ์'}</figcaption></figure>` : `<a class="btn" href="${esc(v)}" target="_blank" rel="noopener">เปิดรูป${k === 'before' ? 'ก่อนเข้า' : 'ผลลัพธ์'}ใน Drive</a>`).join('')}</div>` : ''}
+  ${shots.length ? `<div class="g2">${shots.map(([k, v]) => v.startsWith('data:') ? `<figure style="margin:0"><img src="${esc(v)}" alt="กราฟ ${esc(k)}" style="width:100%;border-radius:10px;display:block"><figcaption class="lab">${esc(shotLabel(k))}</figcaption></figure>` : `<a class="btn" href="${esc(v)}" target="_blank" rel="noopener">เปิดรูป ${esc(shotLabel(k))} ใน Drive</a>`).join('')}</div>` : ''}
   <div class="lab">${esc(x.setup)} · ${esc(x.source || '')} · ${x.synced ? 'ซิงก์แล้ว' : 'ยังไม่ซิงก์'}</div>`;
 }
 function vSettings() {
